@@ -1,7 +1,8 @@
 import os
 from dotenv import load_dotenv
 import psycopg2
-from psycopg2.extensions import connection
+from psycopg2 import pool
+from contextlib import contextmanager
 
 load_dotenv()
 
@@ -13,5 +14,17 @@ DB_CONFIG = {
     "port": os.getenv("DB_PORT", "5432")
 }
 
-def get_db() -> connection:
-    return psycopg2.connect(**DB_CONFIG)
+# Create a connection pool
+connection_pool = pool.SimpleConnectionPool(1, 20, **DB_CONFIG)
+
+@contextmanager
+def get_db():
+    conn = connection_pool.getconn()
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        connection_pool.putconn(conn)
