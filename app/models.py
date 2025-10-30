@@ -23,6 +23,9 @@ class AppointmentOut(BaseModel):
     doctor: str
     appointment_date: date
     status: str
+
+class AppointmentUpdateStatus(BaseModel):
+    status: str
     
 class Prescription(BaseModel):
     appointment_id: int
