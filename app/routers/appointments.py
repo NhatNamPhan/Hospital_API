@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from app.models import AppointmentIn, AppointmentOut, AppointmentUpdateStatus
+from app.models import AppointmentIn, AppointmentOut, AppointmentUpdateStatus, AppointmentDetailPrescription
 from app.database import get_db
 from app.utils import check_exists
 from typing import List
@@ -79,5 +79,37 @@ async def update_appointment(appt_id: int, update: AppointmentUpdateStatus):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
     
+@router.get("/{appointment_id}/prescriptions", response_model=AppointmentDetailPrescription)
+async def get_appt_presc(appointment_id: int):
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                check_exists("appointments", "appointment_id", appointment_id)
+                cur.execute('''
+                    SELECT a.appointment_id, p.prescription_id, medicine, dosage
+                    FROM appointments a
+                    LEFT JOIN prescriptions p ON a.appointment_id = p.appointment_id
+                    WHERE a.appointment_id = %s
+                    ''', (appointment_id,)
+                )
+                rows = cur.fetchall()
+                appointment_id = rows[0][0]
+                prescriptions = [
+                    {
+                        "prescription_id": row[1],
+                        "medicine": row[2],
+                        "dosage": row[3]
+                    } for row in rows
+                ]
+                
+                return {
+                    "appointment_id": appointment_id,
+                    "prescriptions": prescriptions
+                }
+    except psycopg2.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e.pgerror}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
+                
                 

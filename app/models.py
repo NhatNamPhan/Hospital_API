@@ -31,3 +31,12 @@ class Prescription(BaseModel):
     appointment_id: int
     medicine: str
     dosage: str
+
+class PrescriptionOut(BaseModel):
+    prescription_id: int
+    medicine: str
+    dosage: str
+    
+class AppointmentDetailPrescription(BaseModel):
+    appointment_id: int
+    prescriptions: List[PrescriptionOut]
