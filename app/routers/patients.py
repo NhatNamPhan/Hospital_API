@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from app.models import Patient
+from app.models import Patient, HistoryPatient, ApptOut, PrescriptionOutNotId
+from app.utils import check_exists
 from app.database import get_db
 import psycopg2
 
@@ -95,6 +96,56 @@ async def delete_patient(patient_id: int):
                     "DELETE FROM patients WHERE patient_id = %s", (patient_id,)
                 )
                 return {"message": f"Patient with id {patient_id} has been deleted successfully"}
+    except psycopg2.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e.pgerror}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
+    
+@router.get("/{id}/history", response_model=HistoryPatient)
+async def get_patient_history(id: int):
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                check_exists("patients", "patient_id", id)
+                cur.execute('''
+                    SELECT p.patient_id, p.name,
+                           a.appointment_id, d.name, d.specialty,
+                           a.appointment_date, a.status,
+                           pr.medicine, pr.dosage
+                    FROM patients p
+                    JOIN appointments a ON p.patient_id = a.patient_id
+                    JOIN doctors d ON d.doctor_id = a.doctor_id
+                    JOIN prescriptions pr ON pr.appointment_id = a.appointment_id
+                    WHERE p.patient_id = %s
+                    ORDER BY a.appointment_id
+                    ''', (id,)
+                )
+                rows = cur.fetchall()
+                if not rows:
+                    raise HTTPException(status_code=404, detail=f"Patient with no history")
+                patient_id, name = rows[0][0], rows[0][1]
+                appointments_dict = {}
+                for row in rows:
+                    appt_id = row[2]
+                    if appt_id not in appointments_dict:
+                        appointments_dict[appt_id] = {
+                            "appointment_id": appt_id,
+                            "doctor": row[3],
+                            "specialty": row[4],
+                            "appointment_date": row[5],
+                            "status": row[6],
+                            "prescriptions": []
+                        }
+                    appointments_dict[appt_id]["prescriptions"].append({
+                        "medicine": row[7],
+                        "dosage": row[8] 
+                    })
+                appointments = list(appointments_dict.values())
+                return {
+                    "patient_id": patient_id,
+                    "name": name,
+                    "appointments": appointments
+                }
     except psycopg2.Error as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e.pgerror}")
     except Exception as e:

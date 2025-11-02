@@ -40,3 +40,23 @@ class PrescriptionOut(BaseModel):
 class AppointmentDetailPrescription(BaseModel):
     appointment_id: int
     prescriptions: List[PrescriptionOut]
+
+
+    
+class PrescriptionOutNotId(BaseModel):
+    medicine: str
+    dosage: str
+
+class ApptOut(BaseModel):
+    appointment_id: int
+    doctor: str
+    specialty: str
+    appointment_date: date
+    status: str
+    prescriptions: List[PrescriptionOutNotId]
+    
+class HistoryPatient(BaseModel):
+    patient_id: int
+    name: str
+    appointments: List[ApptOut]
+    
