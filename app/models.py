@@ -12,6 +12,10 @@ class Doctor(BaseModel):
     name: str
     specialty: str
 
+class DoctorStatistics(Doctor):
+    total_appointment: int
+    completed: int
+
 class AppointmentIn(BaseModel):
     patient_id: int
     doctor_id: int
@@ -41,8 +45,6 @@ class AppointmentDetailPrescription(BaseModel):
     appointment_id: int
     prescriptions: List[PrescriptionOut]
 
-
-    
 class PrescriptionOutNotId(BaseModel):
     medicine: str
     dosage: str
@@ -59,4 +61,5 @@ class HistoryPatient(BaseModel):
     patient_id: int
     name: str
     appointments: List[ApptOut]
+
     

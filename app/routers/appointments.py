@@ -54,6 +54,7 @@ async def update_appointment(appt_id: int, update: AppointmentUpdateStatus):
     try:
         with get_db() as conn:
             with conn.cursor() as cur:
+                check_exists("appointments", "appointment_id", appt_id)
                 cur.execute('''
                     UPDATE appointments
                     SET status = %s
@@ -65,8 +66,6 @@ async def update_appointment(appt_id: int, update: AppointmentUpdateStatus):
                     ''', (update.status, appt_id)
                 )
                 row = cur.fetchone()
-                if not row:
-                    raise HTTPException(status_code=404, detail=f"Appointment with id {appt_id} not found")
                 return {
                     "appointment_id": row[0],
                     "patient": row[1],
@@ -101,7 +100,6 @@ async def get_appt_presc(appointment_id: int):
                         "dosage": row[3]
                     } for row in rows
                 ]
-                
                 return {
                     "appointment_id": appointment_id,
                     "prescriptions": prescriptions

@@ -42,12 +42,11 @@ async def get_patient(patient_id: int):
     try: 
         with get_db() as conn:
             with conn.cursor() as cur:
+                check_exists("patients", "patient_id", patient_id)
                 cur.execute(
                     "SELECT * from patients WHERE patient_id = %s", (patient_id,)
                 )
                 row = cur.fetchone()
-                if not row:
-                    raise HTTPException(status_code=404, detail=f"Patient with id {patient_id} not found")
                 return {"patient_id": patient_id, "name": row[1], "gender": row[2], "birth_date": row[3], "phone": row[4]}
     except psycopg2.Error as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e.pgerror}")
@@ -59,6 +58,7 @@ async def update_patient(patient_id: int, patient: Patient):
     try:
         with get_db() as conn:
             with conn.cursor() as cur:
+                check_exists("patients", "patient_id", patient_id)
                 cur.execute('''
                     UPDATE patients
                     SET name = %s, gender = %s, birth_date = %s, phone = %s
@@ -67,8 +67,6 @@ async def update_patient(patient_id: int, patient: Patient):
                     ''', (patient.name, patient.gender, patient.birth_date, patient.phone, patient_id)
                 )
                 row = cur.fetchone()
-                if not row:
-                    raise HTTPException(status_code=404, detail=f"Patient with id {patient_id} not found")
                 return {"patient_id": row[0], "name": row[1], "gender": row[2], "birth_date": row[3], "phone": row[4]}
     except psycopg2.Error as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e.pgerror}")
@@ -80,12 +78,7 @@ async def delete_patient(patient_id: int):
     try:
         with get_db() as conn:
             with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT patient_id FROM patients WHERE patient_id = %s", (patient_id,)
-                )
-                patient = cur.fetchone()
-                if not patient:
-                    raise HTTPException(status_code=404, detail="Patient not found")
+                check_exists("patients", "patient_id", patient_id)
                 cur.execute(
                     "SELECT 1 FROM appointments WHERE patient_id = %s", (patient_id,)
                 )
