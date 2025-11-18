@@ -94,7 +94,7 @@ async def delete_patient(patient_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
     
-@router.get("/{id}/history", response_model=HistoryPatient)
+@router.get("/history/{id}", response_model=HistoryPatient)
 async def get_patient_history(id: int):
     try:
         with get_db() as conn:

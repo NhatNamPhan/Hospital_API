@@ -38,6 +38,31 @@ async def get_doctors():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
+@router.get("/stats", response_model=List[DoctorStatistics])
+async def get_doctor_statistics():
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute('''
+                    SELECT d.name, d.specialty, count(a.appointment_id), SUM(CASE WHEN a.status = 'done' THEN 1 ELSE 0 END)
+                    FROM doctors d
+                    LEFT JOIN appointments a ON d.doctor_id = a.doctor_id
+                    GROUP BY d.doctor_id'''
+                )
+                rows = cur.fetchall()
+                return [
+                    {
+                        "name": row[0],
+                        "specialty": row[1],
+                        "total_appointment": row[2],
+                        "completed": row[3]
+                    } for row in rows
+                ]
+    except psycopg2.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e.pgerror}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}") 
+
 @router.get("/{doctor_id}")
 async def get_doctor(doctor_id: int):
     try:
@@ -95,27 +120,3 @@ async def delete_doctor(doctor_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
     
-@router.get("/stats/doctors", response_model=List[DoctorStatistics])
-async def get_doctor_statistics():
-    try:
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute('''
-                    SELECT d.name, d.specialty, count(a.appointment_id), SUM(CASE WHEN a.status = 'done' THEN 1 ELSE 0 END)
-                    FROM doctors d
-                    LEFT JOIN appointments a ON d.doctor_id = a.doctor_id
-                    GROUP BY d.doctor_id'''
-                )
-                rows = cur.fetchall()
-                return [
-                    {
-                        "name": row[0],
-                        "specialty": row[1],
-                        "total_appointment": row[2],
-                        "completed": row[3]
-                    } for row in rows
-                ]
-    except psycopg2.Error as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {e.pgerror}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}") 

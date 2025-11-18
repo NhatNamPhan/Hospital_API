@@ -78,7 +78,7 @@ async def update_appointment(appt_id: int, update: AppointmentUpdateStatus):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
     
-@router.get("/{appointment_id}/prescriptions", response_model=AppointmentDetailPrescription)
+@router.get("/prescriptions/{appointment_id}", response_model=AppointmentDetailPrescription)
 async def get_appt_presc(appointment_id: int):
     try:
         with get_db() as conn:
