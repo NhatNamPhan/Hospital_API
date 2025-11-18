@@ -26,3 +26,7 @@ CREATE TABLE prescriptions (
     medicine VARCHAR(100),
     dosage VARCHAR(50)
 );
+
+
+ALTER TABLE appointments 
+ADD CONSTRAINT check_status CHECK (status IN ('scheduled', 'done', 'canceled'));
